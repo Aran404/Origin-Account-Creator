@@ -2,7 +2,7 @@
 ***Code under GNU General Public License v3.0***
 
 Make Sure To Star to see more
-\nShowcase Video ~ https://www.youtube.com/watch?v=VPeFNAssYIg&ab_channel=XternalArchives
+Showcase Video ~ https://www.youtube.com/watch?v=VPeFNAssYIg&ab_channel=XternalArchives
 
 **About**
   - Made in 1 hour
