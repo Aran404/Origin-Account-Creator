@@ -2,3 +2,4 @@ selenium
 fake_useragent
 Datetime
 requests 
+colorama
