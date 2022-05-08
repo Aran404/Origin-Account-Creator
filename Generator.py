@@ -6,6 +6,8 @@ Made With <3 to get rid of the people who sell it (Sorry FetaaWSB and Flex <33)
 """
 
 # General Imports
+from weakref import proxy
+from selenium_stealth import stealth
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -36,6 +38,9 @@ init()
 # Amount of accounts created in the session
 Created_Accounts = 0
 
+# Used for safe print
+thread_lock = threading.Lock()
+
 
 class Generator:
     def __init__(self, proxy) -> None:
@@ -48,6 +53,12 @@ class Generator:
             self.useragent = UserAgent().random
         except:
             self.useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"
+
+    # Safe print, to not overlap when running thread tasks
+    def sprint(self, message: str) -> None:
+        thread_lock.acquire()
+        sys.stdout.write(message)
+        thread_lock.release()
 
     # Module made by a friend
     def get_code(self):
@@ -76,7 +87,7 @@ class Generator:
         return False
 
     def __init_driver__(self) -> None:
-        sys.stdout.write(f"{Fore.WHITE}[{Fore.GREEN}PROXY{Fore.WHITE}] {self.proxy}\n")
+        self.sprint(f"{Fore.WHITE}[{Fore.GREEN}PROXY{Fore.WHITE}] {self.proxy}\n")
 
         ser = Service(f"{os.getcwd()}\chromedriver.exe")
         proxy_server = self.proxy
@@ -105,6 +116,7 @@ class Generator:
                 "disable-client-side-phishing-detection",
             ],
         )
+
         options.add_experimental_option("useAutomationExtension", False)
         options.add_argument("--lang=en")
         options.add_argument("--log-level=3")
@@ -122,6 +134,16 @@ class Generator:
 
         self.driver = webdriver.Chrome(
             service=ser, desired_capabilities=capabilities, options=options
+        )
+
+        stealth(
+            self.driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
         )
 
         self.driver.set_window_size(500, 570)
@@ -224,6 +246,8 @@ class Generator:
 
             self.driver.switch_to.window(self.login_page)
 
+            self.current_url = self.driver.current_url
+
             WebDriverWait(self.driver, 40).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "label[for='readAccept']"))
             )
@@ -265,10 +289,10 @@ class Generator:
             ).select_by_visible_text(str(self.config["country"]))
             time.sleep(random.uniform(0.59, 1.12))
 
-            sys.stdout.write(
+            self.sprint(
                 f"{Fore.WHITE}[{Fore.GREEN}DOB{Fore.WHITE}] {month}:{day}:{year}\n"
             )
-            sys.stdout.write(
+            self.sprint(
                 f"{Fore.WHITE}[{Fore.GREEN}COUNTRY{Fore.WHITE}] {self.config['country']}\n"
             )
 
@@ -320,16 +344,14 @@ class Generator:
                 self.driver.find_element(By.CSS_SELECTOR, "#email").send_keys(char)
 
             time.sleep(random.uniform(0.452, 1.235))
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.GREEN}EMAIL{Fore.WHITE}] {self.email}\n"
-            )
+            self.sprint(f"{Fore.WHITE}[{Fore.GREEN}EMAIL{Fore.WHITE}] {self.email}\n")
 
             for char in self.password:
                 time.sleep(random.uniform(0.015, 0.022))
                 self.driver.find_element(By.CSS_SELECTOR, "#password").send_keys(char)
 
             time.sleep(random.uniform(0.78, 0.9723))
-            sys.stdout.write(
+            self.sprint(
                 f"{Fore.WHITE}[{Fore.GREEN}PASSWORD{Fore.WHITE}] {self.password}\n"
             )
 
@@ -338,7 +360,7 @@ class Generator:
                 self.driver.find_element(By.CSS_SELECTOR, "#originId").send_keys(char)
 
             time.sleep(random.uniform(0.561, 0.974))
-            sys.stdout.write(
+            self.sprint(
                 f"{Fore.WHITE}[{Fore.GREEN}USERNAME{Fore.WHITE}] {self.username}\n"
             )
 
@@ -350,7 +372,11 @@ class Generator:
 
             time.sleep(5)
 
-            if "that wasn't it" in self.driver.page_source:
+            if (
+                "that wasn't it" in self.driver.page_source
+                and "Please solve this puzzle so we know you are a real person"
+                not in self.driver.page_source
+            ):
 
                 for char in self.password:
                     time.sleep(random.uniform(0.015, 0.022))
@@ -374,91 +400,87 @@ class Generator:
             return False
 
     def fill_form3(self) -> bool or str:
-        try:
-            WebDriverWait(self.driver, 40).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "#submitBtn"))
+        WebDriverWait(self.driver, 40).until(
+            EC.frame_to_be_available_and_switch_to_it(
+                (By.XPATH, "/html/body/div[6]/iframe")
             )
+        )
 
-            self.driver.execute_script(
-                """
-            document.querySelector("#submitBtn").click();
+        self.driver.execute_script(
+            f"""
+            document.querySelector("#verification-token").value = "{captcha_token}";
+            document.querySelector("#FunCaptcha-Token").value = "{captcha_token}";
+        """
+        )
+
+        WebDriverWait(self.driver, 40).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#submitBtn"))
+        )
+
+        self.driver.execute_script(
             """
-            )
+        document.querySelector("#submitBtn").click();
+        """
+        )
 
-            WebDriverWait(self.driver, 40).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "#emailVerifyCode"))
-            )
+        WebDriverWait(self.driver, 40).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#emailVerifyCode"))
+        )
 
-            self.email_verify_code = self.get_code()
+        self.email_verify_code = self.get_code()
 
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.GREEN}EMAIL{Fore.WHITE}] Code: {self.email_verify_code}\n"
-            )
+        self.sprint(
+            f"{Fore.WHITE}[{Fore.GREEN}EMAIL{Fore.WHITE}] Code: {self.email_verify_code}\n"
+        )
 
-            self.driver.execute_script(
-                f"""
-            document.querySelector("#emailVerifyCode").value = "{self.email_verify_code}";
+        self.driver.execute_script(
+            f"""
+        document.querySelector("#emailVerifyCode").value = "{self.email_verify_code}";
+        """
+        )
+
+        self.driver.execute_script(
             """
-            )
-
-            self.driver.execute_script(
-                """
-            document.querySelector("#btnSendCode").click();     
-            """
-            )
-        except TimeoutException:
-            return "Timeout"
-        except:
-            return False
+        document.querySelector("#btnSendCode").click();     
+        """
+        )
 
     def __main__(self) -> None:
         self.__init_driver__()  # Intilizes the driver, must have chrome binary
         form1 = self.fill_form1()
 
         if form1 is False:
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.RED}ERROR{Fore.WHITE}] Failed at form 1\n"
-            )
+            self.sprint(f"{Fore.WHITE}[{Fore.RED}ERROR{Fore.WHITE}] Failed at form 1\n")
             return
 
         elif str(form1).lower() == "Timeout":
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.RED}PROXY{Fore.WHITE}] Proxy timedout\n"
-            )
+            self.sprint(f"{Fore.WHITE}[{Fore.RED}PROXY{Fore.WHITE}] Proxy timedout\n")
             return
 
         form2 = self.fill_form2()
 
         if form2 is False:
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.RED}ERROR{Fore.WHITE}] Failed at form 1\n"
-            )
+            self.sprint(f"{Fore.WHITE}[{Fore.RED}ERROR{Fore.WHITE}] Failed at form 1\n")
             return
 
         elif str(form2).lower() == "Timeout":
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.RED}PROXY{Fore.WHITE}] Proxy timedout\n"
-            )
+            self.sprint(f"{Fore.WHITE}[{Fore.RED}PROXY{Fore.WHITE}] Proxy timedout\n")
             return
 
         form3 = self.fill_form3()
 
         if form3 is False:
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.RED}ERROR{Fore.WHITE}] Failed at form 1\n"
-            )
+            self.sprint(f"{Fore.WHITE}[{Fore.RED}ERROR{Fore.WHITE}] Failed at form 1\n")
             return
 
         elif str(form3).lower() == "Timeout":
-            sys.stdout.write(
-                f"{Fore.WHITE}[{Fore.RED}PROXY{Fore.WHITE}] Proxy timedout\n"
-            )
+            self.sprint(f"{Fore.WHITE}[{Fore.RED}PROXY{Fore.WHITE}] Proxy timedout\n")
             return
 
         with open("Accounts.txt", "a+") as accounts:
             accounts.write(f"[Email: {self.email}, Password: {self.password}]\n")
 
-        sys.stdout.write(
+        self.sprint(
             f"{Fore.WHITE}[{Fore.GREEN}SUCCESS{Fore.WHITE}] (Email: {self.email}, Password: {self.password})\n"
         )
 
