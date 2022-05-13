@@ -1,5 +1,6 @@
 colorama==0.4.4
 fake_useragent==0.1.11
+selenium-stealth==1.0.6
 requests==2.25.1
 selenium==4.1.5
 DateTime==4.3
