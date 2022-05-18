@@ -406,13 +406,6 @@ class Generator:
             )
         )
 
-        self.driver.execute_script(
-            f"""
-            document.querySelector("#verification-token").value = "{captcha_token}";
-            document.querySelector("#FunCaptcha-Token").value = "{captcha_token}";
-        """
-        )
-
         WebDriverWait(self.driver, 40).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#submitBtn"))
         )
